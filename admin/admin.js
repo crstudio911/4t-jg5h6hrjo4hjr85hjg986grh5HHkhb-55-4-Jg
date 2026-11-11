@@ -43,6 +43,8 @@
     bad_image: 'صورة من الصور مش سليمة. شيلها واختار صورة تانية.',
     too_large: 'صورة من الصور كبيرة جدًا. اختار صورة أصغر.',
     not_image: 'الملف اللي اخترته مش صورة.',
+    bad_value: 'فيه رقم أو رابط مكتوب غلط، فالإعدادات ما اتحفظتش. راجع أرقام التليفون وروابط السوشيال.',
+    too_many_requests: 'طلبات كتير ورا بعض. استنى دقيقة وجرّب تاني.',
     word: 'الكلمة مش مظبوطة، اكتب DELL بالحروف الكبيرة.',
     net: 'مفيش نت. اتأكد إن النت شغال وجرّب تاني.'
   };
@@ -59,6 +61,7 @@
     clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms);
   }
 
+  const newId = () => 'p' + (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join('')).replace(/-/g, '').slice(0, 7);
   let token = '';
   try { const j = JSON.parse(localStorage.getItem(TOK_KEY) || 'null'); if (j && j.t && j.exp > Date.now()) token = j.t; } catch (_) { }
   const saveTok = t => { token = t; try { if (t) localStorage.setItem(TOK_KEY, JSON.stringify({ t, exp: Date.now() + 5.5 * 3600e3 })); else localStorage.removeItem(TOK_KEY); } catch (_) { } };
@@ -111,7 +114,8 @@
     setTimeout(() => $('#lgUser').focus(), 50);
   }
   function onAuthLost() {
-    saveTok(''); $$('dialog[open]').forEach(d => d.close());
+    saveTok(''); try { localStorage.removeItem(DATA_KEY); } catch (_) { }
+    D = null; $$('dialog[open]').forEach(d => d.close());
     showLogin(ERR.auth);
   }
 
@@ -131,6 +135,7 @@
 
   $('#logout').addEventListener('click', () => {
     if (pending > 0) { toast('استنى لحد ما الحفظ يخلص.'); return; }
+    if (token) call('logout', null, 1);
     saveTok(''); try { localStorage.removeItem(DATA_KEY); } catch (_) { }
     D = null; showLogin('');
   });
@@ -522,7 +527,7 @@
       if (!up.ok) { fail(up.error); return; }
     }
     const item = {
-      id: editing ? editing.id : '', name, category: $('#pCat').value, brand: $('#pBrand').value.trim(),
+      id: editing ? editing.id : newId(), name, category: $('#pCat').value, brand: $('#pBrand').value.trim(),
       price: numIn($('#pPrice').value), old_price: numIn($('#pOld').value), description: $('#pDesc').value.trim(),
       badge: $('#pBadge').value.trim(), sort: $('#pSort').value.trim() === '' ? '' : (Number(numIn($('#pSort').value)) || 0),
       active: $('#pActive').checked, in_stock: $('#pStock').checked, images: pUp.urls(),
@@ -532,12 +537,12 @@
     $('#pDlg').close();
     let target = editing, before = null;
     if (target) { before = Object.assign({}, target); Object.assign(target, item); }
-    else { target = Object.assign({ _tmp: true }, item, { id: 'tmp' + Date.now() }); D.products.unshift(target); }
+    else { target = Object.assign({}, item); D.products.unshift(target); }
     target._saving = true; renderProducts(); renderCats();
     toast(editing ? 'بنحفظ التعديل…' : 'بنضيف المنتج…', 1600);
-    const r = await write('saveProduct', { item: Object.assign({}, item, { id: target._tmp ? '' : target.id }) });
+    const r = await write('saveProduct', { item: Object.assign({}, item, { id: target.id }) });
     target._saving = false;
-    if (r.ok) { if (target._tmp) { target.id = r.id; delete target._tmp; } cacheData(); toast(editing ? 'التعديل اتحفظ' : 'المنتج اتضاف للمتجر'); }
+    if (r.ok) { cacheData(); toast(editing ? 'التعديل اتحفظ' : 'المنتج اتضاف للمتجر'); }
     else {
       if (before) Object.assign(target, before); else D.products.splice(D.products.indexOf(target), 1);
       fail(r.error);
