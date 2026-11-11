@@ -6,6 +6,7 @@
   const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
   const API = String((window.MK_CONFIG && window.MK_CONFIG.api) || '').trim().replace(/\/+$/, '');
   const SITE = (() => { try { const u = new URL(String((window.MK_CONFIG && window.MK_CONFIG.site) || '')); return u.protocol === 'https:' ? u.origin + '/main.html' : ''; } catch (_) { return ''; } })();
+  const LISTS = window.MK_LISTS || { ICONS: {}, GOV: [], parseShip: () => [] };
   const TOK_KEY = 'mk_admin_tok', DATA_KEY = 'mk_admin_data';
   const root = document.documentElement;
   try { const th = localStorage.getItem('mk_theme'); if (th === 'light' || th === 'dark') root.setAttribute('data-theme', th); } catch (_) { }
@@ -24,29 +25,37 @@
     store: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16"/></svg>',
     chat: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
     cart: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+    truck: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3.5V16h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
     mega: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h3l7 4V6L7 10zM18 9a4 4 0 0 1 0 6"/></svg>'
   };
 
   const ERR = {
-    wrong: 'اسم المستخدم أو كلمة المرور غلط.',
-    locked: 'محاولات كتير غلط. استنى 10 دقايق وجرّب تاني.',
-    auth: 'انتهت مدة الدخول، ادخل تاني.',
-    busy: 'فيه حفظ شغال دلوقتي، جرّب تاني بعد ثانية.',
-    name: 'اكتب الاسم الأول.',
-    exists: 'فيه قسم بنفس الاسم ده.',
+    wrong: 'اسم المستخدم أو كلمة المرور مش صح.',
+    locked: 'اتعملت محاولات دخول غلط كتير. استنى 10 دقايق وجرّب تاني.',
+    auth: 'خرجت من اللوحة لأن مدة الدخول خلصت. ادخل تاني.',
+    busy: 'فيه حفظ تاني شغال دلوقتي. استنى ثانية وجرّب تاني.',
+    name: 'لازم تكتب الاسم الأول.',
+    exists: 'فيه قسم بنفس الاسم ده بالفعل.',
     has_products: 'القسم ده فيه منتجات. انقلها لقسم تاني أو احذفها الأول.',
-    no_img_key: 'رفع الصور مش شغال لسه. لازم مفتاح imgBB يتحط في إعدادات الشيت.',
-    upload_failed: 'الصورة ما اترفعتش، جرّب تاني.',
-    bad_image: 'الصورة دي مش مناسبة، اختار صورة تانية.',
-    too_large: 'الصورة كبيرة جدًا، اختار صورة أصغر.',
-    short: 'كلمة المرور لازم تكون 6 حروف أو أرقام على الأقل.',
-    net: 'مفيش اتصال بالنت. اتأكد من النت وجرّب تاني.'
+    no_img_key: 'رفع الصور مش شغال دلوقتي، فالمنتج ما اتحفظش.',
+    upload_failed: 'صورة من الصور ما اترفعتش، فالمنتج ما اتحفظش. جرّب تاني.',
+    bad_image: 'صورة من الصور مش سليمة. شيلها واختار صورة تانية.',
+    too_large: 'صورة من الصور كبيرة جدًا. اختار صورة أصغر.',
+    not_image: 'الملف اللي اخترته مش صورة.',
+    word: 'الكلمة مش مظبوطة، اكتب DELL بالحروف الكبيرة.',
+    net: 'مفيش نت. اتأكد إن النت شغال وجرّب تاني.'
   };
-  const errText = e => ERR[e] || 'حصلت مشكلة، جرّب تاني.';
+  const errText = e => ERR[e] || 'الحفظ ما تمّش، ومفيش حاجة اتغيرت. جرّب تاني.';
+  const DEV = '<span class="dev">ارجع للمطور</span>';
+  const errHTML = e => `<span>${esc(errText(e))}</span>${DEV}`;
+  function showErr(el, e) { el.hidden = false; el.innerHTML = errHTML(e); }
 
   let toastT;
-  function toast(msg, ms = 2800) {
-    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  function toast(msg, ms = 2800, err) {
+    const t = $('#toast'); t.classList.toggle('bad', !!err);
+    if (err) t.innerHTML = errHTML(err); else t.textContent = msg;
+    t.classList.add('show');
     clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms);
   }
 
@@ -72,6 +81,7 @@
     return { ok: false, error: 'server' };
   }
 
+  const fail = e => toast('', 4500, e);
   let pending = 0, hadErr = false;
   function setSync() {
     const s = $('#sync'), sp = s.querySelector('span');
@@ -97,7 +107,7 @@
 
   function showLogin(msg) {
     $('#app').hidden = true; $('#login').hidden = false;
-    const e = $('#lgErr'); e.hidden = !msg; e.textContent = msg || '';
+    const e = $('#lgErr'); e.hidden = !msg; e.innerHTML = msg ? `<span>${esc(msg)}</span>${DEV}` : '';
     setTimeout(() => $('#lgUser').focus(), 50);
   }
   function onAuthLost() {
@@ -110,11 +120,11 @@
     e.preventDefault();
     const u = $('#lgUser'), p = $('#lgPass'), err = $('#lgErr'), btn = $('#lgBtn');
     [u, p].forEach(i => i.classList.toggle('bad', !i.value.trim()));
-    if (!u.value.trim() || !p.value.trim()) { err.hidden = false; err.textContent = 'اكتب اسم المستخدم وكلمة المرور.'; return; }
+    if (!u.value.trim() || !p.value.trim()) { err.hidden = false; err.innerHTML = `<span>اكتب اسم المستخدم وكلمة المرور.</span>${DEV}`; return; }
     btn.disabled = true; btn.innerHTML = '<span class="spin"></span><span>بندخّلك…</span>';
     const r = await call('login', { user: u.value.trim(), pass: p.value }, 1);
     btn.disabled = false; btn.innerHTML = '<span>دخول</span>';
-    if (!r.ok) { err.hidden = false; err.textContent = errText(r.error); return; }
+    if (!r.ok) { showErr(err, r.error); return; }
     saveTok(r.token); p.value = '';
     startApp();
   });
@@ -137,14 +147,14 @@
     if (r.ok) {
       if (pending === 0) { D = r.data; cacheData(); renderAll(); }
     } else if (!D) {
-      $('#plist').innerHTML = `<div class="empty"><b>مش قادرين نجيب البيانات</b><p>${esc(errText(r.error))}</p><button class="btn btn-ghost" type="button" id="retry">جرّب تاني</button></div>`;
+      $('#plist').innerHTML = `<div class="empty"><b>مش قادرين نجيب البيانات</b><p>${errHTML(r.error)}</p><button class="btn btn-ghost" type="button" id="retry">جرّب تاني</button></div>`;
       $('#retry').addEventListener('click', startApp);
     }
   }
 
   function renderAll() {
     $('#aStore').textContent = D.config.store_name || 'ملكة الأيفون';
-    renderCatSelects(); renderProducts(); renderCats(); renderSettings();
+    renderCatSelects(); renderProducts(); renderCats(); renderSettings(); syncGov();
   }
 
   const money = v => { const n = Number(v); return n > 0 ? nf.format(n) + ' ' + (D.config.currency || 'ج.م') : 'السعر عند التواصل'; };
@@ -193,7 +203,7 @@
     }
     const count = n => D.products.filter(p => p.category === n).length;
     $('#clist').innerHTML = D.categories.map((c, i) => `<article class="row${c.active ? '' : ' off'}${c._saving ? ' saving' : ''}" data-i="${i}">
-  <div class="th">${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ICON.tag}</div>
+  <div class="th ic">${(LISTS.ICONS[c.icon] || {}).svg || ICON.tag}</div>
   <div class="row-t"><b>${esc(c.name)}</b><small><span>${count(c.name)} منتج</span>${c.active ? '' : '<span class="pill hid">مخفي</span>'}</small></div>
   <div class="row-a">
     <button class="ib${c.active ? ' on' : ''}" type="button" data-a="vis" aria-label="${c.active ? 'إخفاء القسم' : 'إظهار القسم'}">${c.active ? ICON.eye : ICON.eyeOff}</button>
@@ -211,7 +221,7 @@
       ['whatsapp_number', 'رقم الواتساب اللي بيستقبل الطلبات', 'tel', '01012345678'], ['phone', 'رقم تليفون للاتصال', 'tel', '01012345678'],
       ['facebook', 'رابط فيسبوك', 'url', 'https://facebook.com/...'], ['instagram', 'رابط إنستجرام', 'url', 'https://instagram.com/...'], ['tiktok', 'رابط تيك توك', 'url', 'https://tiktok.com/@...']] },
     { t: 'الطلبات', i: ICON.cart, f: [
-      ['orders_enabled', 'استقبال الطلبات شغال', 'bool'], ['ask_address', 'اطلب عنوان العميل', 'bool'],
+      ['orders_enabled', 'استقبال الطلبات شغال', 'bool'],
       ['closed_message', 'رسالة لما الطلبات تكون متوقفة', 'area'], ['order_header', 'أول سطر في رسالة الطلب', 'text'], ['order_footer', 'آخر سطر في رسالة الطلب', 'text']] },
     { t: 'الإعلان', i: ICON.mega, f: [['announcement', 'إعلان بيظهر فوق الموقع وكمان كنافذة أول ما العميل يفتح الموقع. أول سطر هو العنوان والباقي تفاصيل. سيبه فاضي لو مش عايز إعلان', 'area']] },
     { t: 'الشريط المتحرك', i: ICON.mega, f: [['marquee', 'كل سطر جملة بتتحرك في الشريط. سيبه فاضي عشان تظهر الجمل الافتراضية', 'area']] }
@@ -219,13 +229,87 @@
   const isTrue = v => /^(true|1|yes|نعم)$/i.test(String(v).trim());
   function renderSettings() {
     const c = D.config;
-    $('#setForm').innerHTML = SETTINGS.map(g => `<section class="card"><h2>${g.i}${esc(g.t)}</h2>${g.f.map(([k, l, ty, ph]) => ty === 'bool'
+    $('#setForm').innerHTML = shipCard(c) + SETTINGS.map(g => `<section class="card"><h2>${g.i}${esc(g.t)}</h2>${g.f.map(([k, l, ty, ph]) => ty === 'bool'
       ? `<label class="sw"><input type="checkbox" data-k="${k}" ${isTrue(c[k]) ? 'checked' : ''}><i></i><span>${esc(l)}</span></label>`
       : ty === 'area' ? `<label class="fld"><span class="lbl">${esc(l)}</span><textarea data-k="${k}" maxlength="500" rows="${k === 'marquee' ? 6 : 3}">${esc(c[k] || '')}</textarea></label>`
         : `<label class="fld"><span class="lbl">${esc(l)}</span><input data-k="${k}" type="${ty === 'url' ? 'url' : ty === 'tel' ? 'tel' : 'text'}" ${ty === 'tel' || ty === 'url' ? 'dir="ltr"' : ''} maxlength="500" value="${esc(c[k] || '')}" placeholder="${esc(ph || '')}"></label>`).join('')}</section>`).join('');
   }
 
+  function shipCard(c) {
+    const on = {}; LISTS.parseShip(c.shipping).forEach(x => { on[x.name] = x.fee; });
+    const fresh = !String(c.shipping || '').trim();
+    const rows = LISTS.GOV.map(([g]) => { const has = fresh || g in on; return `<div class="gv${has ? '' : ' off'}" data-g="${esc(g)}">
+  <label class="ck"><input type="checkbox" class="gsel" aria-label="حدد ${esc(g)}"><i></i></label>
+  <span class="gn">${esc(g)}</span>
+  <label class="gfee-w"><input class="gfee" inputmode="decimal" maxlength="7" placeholder="0" value="${has && on[g] ? esc(on[g]) : ''}" aria-label="مصاريف الشحن لـ ${esc(g)}"><span>${esc(c.currency || 'ج.م')}</span></label>
+  <label class="sw"><input type="checkbox" class="gon" ${has ? 'checked' : ''} aria-label="التوصيل لـ ${esc(g)}"><i></i></label>
+</div>`; }).join('');
+    return `<section class="card ship-card"><h2>${ICON.truck}الشحن والاستلام</h2>
+  <label class="sw"><input type="checkbox" data-k="delivery_enabled" ${c.delivery_enabled == null || isTrue(c.delivery_enabled) ? 'checked' : ''}><i></i><span>التوصيل متاح</span></label>
+  <label class="sw"><input type="checkbox" data-k="pickup_enabled" ${c.pickup_enabled == null || isTrue(c.pickup_enabled) ? 'checked' : ''}><i></i><span>الاستلام من المحل متاح</span></label>
+  <p class="help">العميل بيختار المحافظة بس، ومصاريف الشحن بتتحسب لوحدها في الفاتورة. سيب السعر فاضي أو 0 لو الشحن مجاني. اقفل المفتاح جنب أي محافظة عشان متظهرش للعميل.</p>
+  <div class="gv-bulk">
+    <label class="ck"><input type="checkbox" id="gAll"><i></i><span>حدد الكل</span></label>
+    <span class="gv-cnt" id="gCnt">مفيش محافظات محددة</span>
+    <label class="gfee-w"><input id="gFee" inputmode="decimal" maxlength="7" placeholder="السعر" aria-label="سعر الشحن للمحافظات المحددة"><span>${esc(c.currency || 'ج.م')}</span></label>
+    <button type="button" class="btn btn-ghost sm" data-g="fee">طبّق السعر</button>
+    <button type="button" class="btn btn-ghost sm" data-g="on">إظهار</button>
+    <button type="button" class="btn btn-ghost sm" data-g="off">إخفاء</button>
+  </div>
+  <div class="gv-list">${rows}</div>
+</section>`;
+  }
+  function shipValue() {
+    return $$('#setForm .gv').filter(r => $('.gon', r).checked).map(r => { const f = numIn($('.gfee', r).value); return r.dataset.g + '=' + (f || 0); }).join(' | ');
+  }
+  function syncGov() {
+    const sel = $$('#setForm .gsel:checked').length, all = $$('#setForm .gsel').length;
+    const ga = $('#gAll'); if (ga) { ga.checked = sel > 0 && sel === all; ga.indeterminate = sel > 0 && sel < all; }
+    const gc = $('#gCnt'); if (gc) gc.textContent = sel ? `محدد ${sel} محافظة` : 'مفيش محافظات محددة';
+    $$('#setForm .gv').forEach(r => { r.classList.toggle('off', !$('.gon', r).checked); r.classList.toggle('sel', $('.gsel', r).checked); });
+  }
+
+  function renderTools() {
+    const T = [
+      ['Dell', 'مسح كل المنتجات والأقسام', 'بيمسح كل المنتجات وكل الأقسام من المتجر مرة واحدة. الإعدادات وبيانات الدخول بتفضل زي ما هي.', true],
+      ['Setup', 'تجهيز المتجر لأول مرة', 'بيجهز المتجر من الصفر بكل الأجزاء والإعدادات الأساسية.'],
+      ['Update', 'تحديث المتجر', 'بيضيف أي حاجة جديدة للمتجر من غير ما يمسح أي بيانات.'],
+      ['Reset', 'إرجاع أجزاء للوضع الأصلي', 'بيرجّع أجزاء معينة من المتجر زي ما كانت أول مرة.'],
+      ['Translate', 'ترجمة المنتجات للإنجليزي', 'بيترجم كل المنتجات والأقسام للنسخة الإنجليزية من الموقع.'],
+      ['ShowSec', 'عرض مفتاح الحماية', 'بيعرض مفتاح الحماية الخاص بالمتجر.'],
+      ['RotateSec', 'تغيير مفتاح الحماية', 'بيعمل مفتاح حماية جديد للمتجر.']
+    ];
+    $('#tools').innerHTML = T.map(([k, t, d, on]) => `<article class="tool${on ? ' live' : ' off'}">
+  <div class="tool-t"><b>${esc(t)}</b><code dir="ltr">${k}</code></div>
+  <p>${esc(d)}</p>
+  ${on ? `<button class="btn btn-danger" type="button" id="wipeBtn">${ICON.del}<span>تشغيل</span></button>` : `<span class="tool-lock">${ICON.lock}<span>ارجع للمطور</span></span>`}
+</article>`).join('');
+    $('#wipeBtn').addEventListener('click', () => { $('#wIn').value = ''; $('#wErr').hidden = true; $('#wDlg').showModal(); setTimeout(() => $('#wIn').focus(), 60); });
+  }
+
   function bindApp() {
+    renderTools();
+    $('#wForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      if ($('#wIn').value.trim() !== 'DELL') { showErr($('#wErr'), 'word'); return; }
+      const btn = $('#wYes'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span><span>بنمسح…</span>';
+      const r = await write('wipe', { confirm: 'DELL' });
+      btn.disabled = false; btn.textContent = 'امسح كل حاجة';
+      if (!r.ok) { showErr($('#wErr'), r.error); return; }
+      $('#wDlg').close(); D.products = []; D.categories = []; cacheData(); renderAll(); toast('كل المنتجات والأقسام اتمسحت');
+    });
+    $('#setForm').addEventListener('change', e => {
+      if (e.target.id === 'gAll') { $$('#setForm .gsel').forEach(x => { x.checked = e.target.checked; }); }
+      if (e.target.matches('.gsel,.gon,#gAll')) syncGov();
+    });
+    $('#setForm').addEventListener('click', e => {
+      const b = e.target.closest('button[data-g]'); if (!b) return;
+      const rows = $$('#setForm .gv').filter(r => $('.gsel', r).checked);
+      if (!rows.length) { toast('حدد محافظة واحدة على الأقل الأول.'); return; }
+      if (b.dataset.g === 'fee') { const v = $('#gFee').value.trim() === '' ? '' : numIn($('#gFee').value); rows.forEach(r => { $('.gfee', r).value = v || ''; $('.gon', r).checked = true; }); toast(`السعر اتطبق على ${rows.length} محافظة. متنساش تدوس حفظ.`); }
+      else rows.forEach(r => { $('.gon', r).checked = b.dataset.g === 'on'; });
+      syncGov();
+    });
     const sl = $('#siteLink'); if (sl && SITE) { sl.href = SITE; sl.hidden = false; }
     $$('.tabs button').forEach(b => b.addEventListener('click', () => {
       $$('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
@@ -248,7 +332,7 @@
         const key = a === 'vis' ? 'active' : 'in_stock';
         const before = p[key]; p[key] = !before; p._saving = true; renderProducts();
         toast(a === 'vis' ? (p.active ? 'المنتج بقى ظاهر' : 'المنتج اتخفى من المتجر') : (p.in_stock ? 'المنتج بقى متوفر' : 'المنتج بقى نفد'));
-        write('saveProduct', { item: pub(p) }).then(r => { p._saving = false; if (!r.ok) { p[key] = before; toast(errText(r.error)); } renderProducts(); });
+        write('saveProduct', { item: pub(p) }).then(r => { p._saving = false; if (!r.ok) { p[key] = before; fail(r.error); } renderProducts(); });
       }
     });
     $('#clist').addEventListener('click', e => {
@@ -256,39 +340,31 @@
       const i = Number(b.closest('.row').dataset.i); const c = D.categories[i]; if (!c) return;
       if (b.dataset.a === 'edit') openCat(i);
       else if (b.dataset.a === 'del') {
-        if (D.products.some(p => p.category === c.name)) { toast(ERR.has_products, 4000); return; }
+        if (D.products.some(p => p.category === c.name)) { fail('has_products'); return; }
         ask('تحذف القسم ده؟', `قسم «${c.name}» هيتشال من المتجر.`, () => {
           const idx = D.categories.indexOf(c); D.categories.splice(idx, 1); renderAll();
-          write('deleteCategory', { name: c.name }).then(r => { if (!r.ok) { D.categories.splice(idx, 0, c); renderAll(); toast(errText(r.error), 4000); } else toast('القسم اتحذف'); });
+          write('deleteCategory', { name: c.name }).then(r => { if (!r.ok) { D.categories.splice(idx, 0, c); renderAll(); fail(r.error); } else toast('القسم اتحذف'); });
         });
       } else if (b.dataset.a === 'vis') {
         c.active = !c.active; c._saving = true; renderCats();
-        write('saveCategory', { item: { old: c.name, name: c.name, active: c.active, sort: c.sort, image: c.image } }).then(r => { c._saving = false; if (!r.ok) { c.active = !c.active; toast(errText(r.error)); } renderCats(); });
+        write('saveCategory', { item: { old: c.name, name: c.name, active: c.active, sort: c.sort, icon: c.icon } }).then(r => { c._saving = false; if (!r.ok) { c.active = !c.active; fail(r.error); } renderCats(); });
       }
     });
 
     $('#saveSet').addEventListener('click', async () => {
       const values = {};
       $$('#setForm [data-k]').forEach(el => { values[el.dataset.k] = el.type === 'checkbox' ? (el.checked ? 'TRUE' : 'FALSE') : el.value.trim(); });
+      values.shipping = shipValue();
+      if (values.delivery_enabled === 'FALSE' && values.pickup_enabled === 'FALSE') { toast('لازم تسيب طريقة استلام واحدة على الأقل شغالة.'); return; }
       const bad = $$('#setForm input[type=url]').find(el => el.value.trim() && !/^https:\/\//i.test(el.value.trim()));
-      if (bad) { bad.classList.add('bad'); bad.focus(); toast('الرابط لازم يبدأ بـ https://'); return; }
+      if (bad) { bad.classList.add('bad'); bad.focus(); toast('الرابط ده مش صح. انسخ الرابط كامل من المتصفح.'); return; }
       const before = Object.assign({}, D.config);
       Object.assign(D.config, values); $('#aStore').textContent = D.config.store_name || 'ملكة الأيفون';
       toast('بنحفظ الإعدادات…');
       const r = await write('saveConfig', { values });
-      if (r.ok) toast('الإعدادات اتحفظت وظهرت في المتجر'); else { D.config = before; renderSettings(); toast(errText(r.error), 4000); }
+      if (r.ok) toast('الإعدادات اتحفظت وظهرت في المتجر'); else { D.config = before; renderSettings(); syncGov(); fail(r.error); }
     });
     $('#setForm').addEventListener('input', e => e.target.classList.remove('bad'));
-
-    $('#passForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const a = $('#np1').value.trim(), b = $('#np2').value.trim(), er = $('#npErr');
-      er.hidden = true;
-      if (a.length < 6) { er.hidden = false; er.textContent = ERR.short; return; }
-      if (a !== b) { er.hidden = false; er.textContent = 'الكلمتين مش زي بعض.'; return; }
-      const r = await write('changePass', { pass: a });
-      if (r.ok) { $('#np1').value = ''; $('#np2').value = ''; toast('كلمة المرور اتغيرت'); } else { er.hidden = false; er.textContent = errText(r.error); }
-    });
 
     $$('dialog').forEach(d => {
       d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
@@ -311,7 +387,7 @@
     setTimeout(() => { D.products.splice(D.products.indexOf(p), 1); renderProducts(); }, 220);
     write('deleteProduct', { id: p.id }).then(r => {
       if (r.ok) toast('المنتج اتحذف');
-      else { if (!D.products.includes(p)) D.products.splice(idx, 0, p); renderProducts(); toast(errText(r.error), 4000); }
+      else { if (!D.products.includes(p)) D.products.splice(idx, 0, p); renderProducts(); fail(r.error); }
     });
   }
 
@@ -329,66 +405,66 @@
     return url;
   }
 
-  function makeUploader(box, opts) {
+  function makeUploader(box) {
     let items = [];
-    const single = !!opts.single;
     const fileIn = $('#fileIn');
     function render() {
-      box.innerHTML = items.map((it, i) => `<div class="im${i === 0 && !single ? ' main' : ''}" data-i="${i}">
+      box.innerHTML = items.map((it, i) => `<div class="im${i === 0 ? ' main' : ''}${it.state === 'up' ? ' up' : ''}" data-i="${i}">
   <img src="${esc(it.preview || it.url)}" alt="" decoding="async" referrerpolicy="no-referrer">
   ${it.state === 'up' ? '<span class="ov"><span class="spin"></span></span>' : ''}
-  ${it.state === 'fail' ? `<span class="ov fail" data-retry>${esc(it.err || 'ما اترفعتش')}<br>دوس للمحاولة تاني</span>` : ''}
-  ${single ? '' : `<button type="button" class="bt mk" data-main aria-label="خليها الصورة الأساسية" title="خليها الصورة الأساسية">${ICON.star}</button>`}
+  <button type="button" class="bt mk" data-main aria-label="خليها الصورة الأساسية" title="خليها الصورة الأساسية">${ICON.star}</button>
   <button type="button" class="bt rm" data-rm aria-label="شيل الصورة">${ICON.x}</button>
-  ${i === 0 && !single ? '<span class="tag">الأساسية</span>' : ''}
-</div>`).join('') + (single && items.length ? '' : `<button type="button" class="addimg" data-add>${ICON.img}<span>${items.length ? 'صور تانية' : (single ? 'اختار صورة' : 'إضافة صور')}</span></button>`);
-    }
-    async function upload(it) {
-      it.state = 'up'; render();
-      try {
-        const data = it.data || (it.data = await shrink(it.file));
-        if (!it.preview) it.preview = data;
-        render();
-        const r = await call('upload', { data, name: 'mk' + Date.now().toString(36) });
-        if (r.ok) { it.url = r.url; it.state = 'ok'; it.data = null; it.file = null; }
-        else { it.state = 'fail'; it.err = errText(r.error); }
-      } catch (_) { it.state = 'fail'; it.err = 'الملف ده مش صورة'; }
-      render(); if (opts.onChange) opts.onChange();
+  ${i === 0 ? '<span class="tag">الأساسية</span>' : ''}
+</div>`).join('') + (items.length >= 10 ? '' : `<button type="button" class="addimg" data-add>${ICON.img}<span>${items.length ? 'صور تانية' : 'إضافة صور'}</span></button>`);
     }
     function add(files) {
-      const list = [...files].filter(f => /^image\//.test(f.type)).slice(0, single ? 1 : 10 - items.length);
-      if (!list.length) return;
-      if (single) items = [];
-      const fresh = list.map(f => ({ file: f, state: 'up', preview: URL.createObjectURL(f) }));
-      items.push(...fresh); render();
-      let i = 0;
-      const next = () => { if (i < fresh.length) { const it = fresh[i++]; return upload(it).then(next); } };
-      Promise.all([next(), next(), next()]);
+      const all = [...files];
+      const list = all.filter(f => /^image\//.test(f.type)).slice(0, 10 - items.length);
+      if (all.length && !list.length) { fail('not_image'); return; }
+      items.push(...list.map(f => ({ file: f, state: 'new', preview: URL.createObjectURL(f) }))); render();
     }
     let picking = false;
     box.addEventListener('click', e => {
-      const t = e.target.closest('[data-add],[data-rm],[data-main],[data-retry]'); if (!t) return;
-      const i = Number((t.closest('.im') || {}).dataset ? (t.closest('.im') || { dataset: {} }).dataset.i : -1);
-      if (t.dataset.add != null) { picking = true; fileIn.multiple = !single; fileIn.value = ''; fileIn.click(); }
-      else if (t.dataset.rm != null) { items.splice(i, 1); render(); }
+      const t = e.target.closest('[data-add],[data-rm],[data-main]'); if (!t || box.classList.contains('lock')) return;
+      const im = t.closest('.im'); const i = im ? Number(im.dataset.i) : -1;
+      if (t.dataset.add != null) { picking = true; fileIn.multiple = true; fileIn.value = ''; fileIn.click(); }
+      else if (t.dataset.rm != null) { const it = items.splice(i, 1)[0]; if (it && it.file && it.preview) URL.revokeObjectURL(it.preview); render(); }
       else if (t.dataset.main != null && i > 0) { items.unshift(items.splice(i, 1)[0]); render(); }
-      else if (t.dataset.retry != null) upload(items[i]);
     });
-    fileIn.addEventListener('change', () => { if (picking && box.isConnected && box.closest('dialog[open]')) { add(fileIn.files); } picking = false; });
+    fileIn.addEventListener('change', () => { if (picking && box.isConnected && box.closest('dialog[open]')) add(fileIn.files); picking = false; });
     box.addEventListener('dragover', e => { e.preventDefault(); const a = $('.addimg', box); if (a) a.classList.add('drag'); });
     box.addEventListener('dragleave', () => { const a = $('.addimg', box); if (a) a.classList.remove('drag'); });
     box.addEventListener('drop', e => { e.preventDefault(); add(e.dataTransfer.files); });
     return {
       set(urls) { items = (urls || []).map(u => ({ url: u, state: 'ok' })); render(); },
-      busy: () => items.some(i => i.state === 'up'),
-      failed: () => items.some(i => i.state === 'fail'),
-      urls: () => items.filter(i => i.state === 'ok' && i.url).map(i => i.url),
-      wait() { return new Promise(res => { const tick = () => items.some(i => i.state === 'up') ? setTimeout(tick, 200) : res(); tick(); }); }
+      waiting: () => items.filter(i => i.state !== 'ok').length,
+      async uploadAll(onStep) {
+        const todo = items.filter(i => i.state !== 'ok');
+        box.classList.add('lock');
+        try {
+          for (let k = 0; k < todo.length; k++) {
+            const it = todo[k]; onStep(k + 1, todo.length);
+            it.state = 'up'; render();
+            let data;
+            try { data = await shrink(it.file); } catch (_) { it.state = 'new'; render(); return { ok: false, error: 'bad_image' }; }
+            const r = await write('upload', { data, name: 'mk' + Date.now().toString(36) });
+            if (!r.ok || !r.url) { it.state = 'new'; render(); return { ok: false, error: r.error || 'upload_failed' }; }
+            it.url = r.url; it.state = 'ok'; it.file = null; render();
+          }
+          return { ok: true };
+        } finally { box.classList.remove('lock'); }
+      },
+      urls: () => items.filter(i => i.state === 'ok' && i.url).map(i => i.url)
     };
   }
 
-  const pUp = makeUploader($('#pImgs'), {});
-  const cUp = makeUploader($('#cImg'), { single: true });
+  const pUp = makeUploader($('#pImgs'));
+
+  let pickIcon = '';
+  function renderIcons() {
+    $('#cIcons').innerHTML = Object.keys(LISTS.ICONS).map(k => { const x = LISTS.ICONS[k]; return `<button type="button" class="ico${k === pickIcon ? ' on' : ''}" role="radio" aria-checked="${k === pickIcon}" data-ic="${k}" title="${esc(x.ar)}">${x.svg}<span>${esc(x.ar)}</span></button>`; }).join('');
+  }
+  $('#cIcons').addEventListener('click', e => { const b = e.target.closest('[data-ic]'); if (!b) return; pickIcon = b.dataset.ic; renderIcons(); });
 
   let colors = [];
   function renderColors() {
@@ -438,8 +514,13 @@
     if (!name) { $('#pName').classList.add('bad'); $('#pName').nextElementSibling.hidden = false; $('#pName').focus(); return; }
     pushColor();
     const btn = $('#pSave');
-    if (pUp.busy()) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span><span>بنرفع الصور…</span>'; await pUp.wait(); btn.disabled = false; btn.textContent = 'حفظ المنتج'; }
-    if (pUp.failed()) toast('في صورة ما اترفعتش ومش هتتحفظ.', 3500);
+    if (btn.disabled) return;
+    if (pUp.waiting()) {
+      btn.disabled = true; $$('#pDlg [data-close]').forEach(b => { b.disabled = true; });
+      const up = await pUp.uploadAll((k, n) => { btn.innerHTML = `<span class="spin"></span><span>${n > 1 ? `بنرفع الصور ${k} من ${n}…` : 'بنرفع الصورة…'}</span>`; });
+      btn.disabled = false; btn.textContent = 'حفظ المنتج'; $$('#pDlg [data-close]').forEach(b => { b.disabled = false; });
+      if (!up.ok) { fail(up.error); return; }
+    }
     const item = {
       id: editing ? editing.id : '', name, category: $('#pCat').value, brand: $('#pBrand').value.trim(),
       price: numIn($('#pPrice').value), old_price: numIn($('#pOld').value), description: $('#pDesc').value.trim(),
@@ -459,7 +540,7 @@
     if (r.ok) { if (target._tmp) { target.id = r.id; delete target._tmp; } cacheData(); toast(editing ? 'التعديل اتحفظ' : 'المنتج اتضاف للمتجر'); }
     else {
       if (before) Object.assign(target, before); else D.products.splice(D.products.indexOf(target), 1);
-      toast(errText(r.error), 4000);
+      fail(r.error);
     }
     renderProducts(); renderCats();
   });
@@ -471,7 +552,7 @@
     $('#cDlgT').textContent = c ? 'تعديل القسم' : 'قسم جديد';
     $('#cName').value = c ? c.name : ''; $('#cName').classList.remove('bad'); $('#cName').nextElementSibling.hidden = true;
     $('#cSort').value = c && c.sort !== '' ? c.sort : ''; $('#cActive').checked = c ? c.active : true;
-    cUp.set(c && c.image ? [c.image] : []);
+    pickIcon = c && LISTS.ICONS[c.icon] ? c.icon : 'phone'; renderIcons();
     $('#cDlg').showModal(); if (!c) setTimeout(() => $('#cName').focus(), 60);
   }
   $('#cForm').addEventListener('submit', async e => {
@@ -481,13 +562,12 @@
     if (!name) { ni.classList.add('bad'); ni.nextElementSibling.hidden = false; ni.focus(); return; }
     const old = catIdx > -1 ? D.categories[catIdx].name : '';
     if (D.categories.some((c, i) => c.name === name && i !== catIdx)) { ni.classList.add('bad'); ni.nextElementSibling.hidden = false; ni.nextElementSibling.textContent = ERR.exists; return; }
-    if (cUp.busy()) await cUp.wait();
-    const item = { old, name, sort: $('#cSort').value.trim() === '' ? '' : (Number(numIn($('#cSort').value)) || 0), active: $('#cActive').checked, image: cUp.urls()[0] || '' };
+    const item = { old, name, sort: $('#cSort').value.trim() === '' ? '' : (Number(numIn($('#cSort').value)) || 0), active: $('#cActive').checked, icon: pickIcon };
     $('#cDlg').close();
     const prev = catIdx > -1 ? Object.assign({}, D.categories[catIdx]) : null;
     let c;
-    if (prev) { c = D.categories[catIdx]; Object.assign(c, { name, sort: item.sort, active: item.active, image: item.image }); if (old !== name) D.products.forEach(p => { if (p.category === old) p.category = name; }); }
-    else { c = { name, sort: item.sort, active: item.active, image: item.image }; D.categories.push(c); }
+    if (prev) { c = D.categories[catIdx]; Object.assign(c, { name, sort: item.sort, active: item.active, icon: item.icon }); if (old !== name) D.products.forEach(p => { if (p.category === old) p.category = name; }); }
+    else { c = { name, sort: item.sort, active: item.active, icon: item.icon }; D.categories.push(c); }
     c._saving = true; renderAll();
     const r = await write('saveCategory', { item });
     c._saving = false;
@@ -495,7 +575,7 @@
     else {
       if (prev) { Object.assign(c, prev); if (old !== name) D.products.forEach(p => { if (p.category === name) p.category = old; }); }
       else D.categories.splice(D.categories.indexOf(c), 1);
-      toast(errText(r.error), 4000);
+      fail(r.error);
     }
     renderAll();
   });

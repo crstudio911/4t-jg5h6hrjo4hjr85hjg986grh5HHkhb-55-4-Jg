@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="core/one.css">
 <link rel="stylesheet" href="admin/admin.css">
 <script src="core/config.js" defer></script>
+<script src="core/lists.js" defer></script>
 <script src="admin/admin.js" defer></script>
 </head>
 <body class="adm">
@@ -24,7 +25,7 @@
   <form class="login-card" id="loginForm" novalidate>
     <img src="img/logo.webp" width="84" height="84" alt="" decoding="async">
     <h1>لوحة التحكم</h1>
-    <p>ادخل باسم المستخدم وكلمة المرور الموجودين في صفحة Admin في الشيت.</p>
+    <p>ادخل باسم المستخدم وكلمة المرور اللي معاك.</p>
     <label><span>اسم المستخدم</span><input id="lgUser" type="text" autocomplete="username" maxlength="60" required></label>
     <label><span>كلمة المرور</span>
       <span class="pass-wrap"><input id="lgPass" type="password" autocomplete="current-password" maxlength="60" required><button type="button" class="eye" id="lgEye" aria-label="إظهار كلمة المرور"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span>
@@ -47,6 +48,7 @@
     <button role="tab" type="button" data-tab="products" aria-selected="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 5h3"/></svg><span>المنتجات</span><b id="cntP"></b></button>
     <button role="tab" type="button" data-tab="cats" aria-selected="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg><span>الأقسام</span><b id="cntC"></b></button>
     <button role="tab" type="button" data-tab="settings" aria-selected="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>الإعدادات</span></button>
+    <button role="tab" type="button" data-tab="tools" aria-selected="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5a4 4 0 0 0 5 5l-8.6 8.6a2.1 2.1 0 0 1-3-3z"/><path d="M14.5 6.5L17 4l3 3-2.5 2.5"/></svg><span>الأدوات</span></button>
   </nav>
   <main class="a-main">
     <section class="panel" id="tab-products">
@@ -64,13 +66,10 @@
     <section class="panel" id="tab-settings" hidden>
       <form id="setForm" class="set-grid" novalidate></form>
       <div class="set-save"><button class="btn btn-main" type="button" id="saveSet">حفظ الإعدادات</button></div>
-      <form class="card pass-card" id="passForm" novalidate>
-        <h2>تغيير كلمة المرور</h2>
-        <label><span>كلمة المرور الجديدة</span><input id="np1" type="password" autocomplete="new-password" maxlength="60" minlength="6"></label>
-        <label><span>اكتبها تاني</span><input id="np2" type="password" autocomplete="new-password" maxlength="60" minlength="6"></label>
-        <p class="err" id="npErr" hidden></p>
-        <button class="btn btn-ghost" type="submit">تغيير كلمة المرور</button>
-      </form>
+    </section>
+    <section class="panel" id="tab-tools" hidden>
+      <div class="bar"><p class="bar-note">دي أدوات المتجر. المتاح ليك منها هو «مسح كل المنتجات والأقسام» بس، والباقي بيشغله المطور.</p></div>
+      <div class="tools" id="tools"></div>
     </section>
   </main>
 </div>
@@ -79,7 +78,7 @@
   <form method="dialog" class="dlg-in" id="pForm" novalidate>
     <div class="dlg-head"><h2 id="pDlgT">منتج جديد</h2><button class="x" type="button" data-close aria-label="إغلاق"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="dlg-body">
-      <div class="fld"><span class="lbl">صور المنتج</span><span class="help">تقدر تختار أكتر من صورة. أول صورة هي اللي بتظهر في المتجر، ودوس على النجمة عشان تخلي أي صورة هي الأساسية.</span>
+      <div class="fld"><span class="lbl">صور المنتج</span><span class="help">تقدر تختار أكتر من صورة. أول صورة هي اللي بتظهر في المتجر، ودوس على النجمة عشان تخلي أي صورة هي الأساسية. الصور بتترفع لما تدوس «حفظ المنتج».</span>
         <div class="imgs" id="pImgs"></div>
       </div>
       <label class="fld"><span class="lbl">اسم المنتج <b class="star">*</b></span><input id="pName" maxlength="120" required><span class="err" hidden>اكتب اسم المنتج.</span></label>
@@ -111,12 +110,22 @@
   <form method="dialog" class="dlg-in" id="cForm" novalidate>
     <div class="dlg-head"><h2 id="cDlgT">قسم جديد</h2><button class="x" type="button" data-close aria-label="إغلاق"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="dlg-body">
-      <div class="fld"><span class="lbl">صورة القسم</span><div class="imgs one" id="cImg"></div></div>
+      <div class="fld"><span class="lbl">أيقونة القسم</span><span class="help">اختار الأيقونة اللي تعبّر عن القسم، وهي اللي هتظهر في المتجر.</span><div class="icons" id="cIcons" role="radiogroup" aria-label="أيقونة القسم"></div></div>
       <label class="fld"><span class="lbl">اسم القسم <b class="star">*</b></span><input id="cName" maxlength="60" required><span class="err" hidden>اكتب اسم القسم.</span></label>
       <label class="fld"><span class="lbl">الترتيب</span><input id="cSort" inputmode="numeric" maxlength="5" placeholder="الأصغر بيظهر الأول"></label>
       <label class="sw"><input type="checkbox" id="cActive" checked><i></i><span>ظاهر في المتجر</span></label>
     </div>
     <div class="dlg-foot"><button class="btn btn-main" type="submit">حفظ القسم</button><button class="btn btn-ghost" type="button" data-close>إلغاء</button></div>
+  </form>
+</dialog>
+
+<dialog class="a-dlg sm" id="wDlg" aria-labelledby="wDlgT">
+  <form method="dialog" class="dlg-in" id="wForm" novalidate>
+    <div class="dlg-body ask"><span class="ask-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span><h2 id="wDlgT">تمسح كل المنتجات والأقسام؟</h2><p>كل المنتجات وكل الأقسام هتتمسح من المتجر نهائيًا ومفيش رجوع. الإعدادات وبيانات الدخول هتفضل زي ما هي.</p>
+      <label class="fld"><span class="lbl">عشان تأكد، اكتب كلمة <b dir="ltr">DELL</b></span><input id="wIn" dir="ltr" autocomplete="off" maxlength="10"></label>
+      <p class="err" id="wErr" hidden></p>
+    </div>
+    <div class="dlg-foot"><button class="btn btn-danger" type="submit" id="wYes">امسح كل حاجة</button><button class="btn btn-ghost" type="button" data-close>تراجع</button></div>
   </form>
 </dialog>
 
